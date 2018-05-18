@@ -47,7 +47,7 @@ AFPS_Character::AFPS_Character()
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 
 	// BeginPlay 가능.
-	FStringClassReference Anim_Male_Ref(TEXT("AnimBlueprint'/Game/BluewPrints/Anumations/ABP_FPSAnimation.ABP_FPSAnimation_C'"));
+	FStringClassReference Anim_Male_Ref(TEXT("AnimBlueprint'/Game/BluePrints/Anumations/ABP_FPSAnimation.ABP_FPSAnimation_C'"));
 	if (UClass* Anim_Male_Class = Anim_Male_Ref.TryLoadClass<UAnimInstance>())
 	{
 		GetMesh()->SetAnimInstanceClass(Anim_Male_Class);
