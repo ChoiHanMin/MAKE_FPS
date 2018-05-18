@@ -13,8 +13,8 @@ UCLASS()
 class UE_FPS0517_API AFPS_GameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
-	
+public:
+		AFPS_GameMode();
 	
 	
 };

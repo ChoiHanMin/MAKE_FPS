@@ -10,6 +10,7 @@
 #include "Components/ActorComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #include "Character/WeaponComponent.h"
 
@@ -59,8 +60,11 @@ AFPS_Character::AFPS_Character()
 	//	GetMesh()->SetAnimInstanceClass(Anim.Class);
 	//}
 
-	Weapon = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Weapon"));
+	Weapon = CreateDefaultSubobject<UWeaponComponent>(TEXT("Weapon"));
 	Weapon->SetupAttachment(GetMesh(), TEXT("RHandWeapon"));
+
+	/*Weapon = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Weapon"));
+	Weapon->SetupAttachment(GetMesh(), TEXT("RHandWeapon"));*/
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SK_M4A1(TEXT("StaticMesh'/Game/Weapons/M4A1/SM_M4A1.SM_M4A1'"));
 	if (SK_M4A1.Succeeded())
@@ -68,8 +72,7 @@ AFPS_Character::AFPS_Character()
 		Weapon->SetStaticMesh(SK_M4A1.Object);
 	}
 
-	/*Weapon = CreateDefaultSubobject<UWeaponComponent>(TEXT("Weapon"));
-	Weapon->SetupAttachment(GetMesh(), TEXT("RHandWeapon"));*/
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
 // Called when the game starts or when spawned
@@ -95,6 +98,8 @@ void AFPS_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &AFPS_Character::MoveForward);
 	PlayerInputComponent->BindAxis(TEXT("Turn"), this, &AFPS_Character::Turn);
 	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &AFPS_Character::LookUp);
+
+	PlayerInputComponent->BindAction(TEXT("Crouch"), IE_Pressed, this, &AFPS_Character::TryCrouch);
 }
 
 void AFPS_Character::MoveRight(float Value)
@@ -124,6 +129,18 @@ void AFPS_Character::LookUp(float Value)
 	if (Value != 0.0f)
 	{
 		AddControllerPitchInput(Value);
+	}
+}
+
+void AFPS_Character::TryCrouch()
+{
+	if (CanCrouch())
+	{
+		Crouch();
+	}
+	else
+	{
+		UnCrouch();
 	}
 }
 
