@@ -11,6 +11,8 @@
 #include "Animation/AnimInstance.h"
 #include "Components/StaticMeshComponent.h"
 
+#include "Character/WeaponComponent.h"
+
 
 // Sets default values
 AFPS_Character::AFPS_Character()
@@ -40,7 +42,7 @@ AFPS_Character::AFPS_Character()
 
 	bUseControllerRotationPitch = false;
 	
-
+	// AnimationSetting.
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 
 	// BeginPlay 가능.
@@ -51,11 +53,11 @@ AFPS_Character::AFPS_Character()
 	}
 
 	// 생성자에서만.
-	/*static ConstructorHelpers::FClassFinder<UAnimInstance> Aim(TEXT(""));
-	if (Aim.Succeeded())
-	{
-		GetMesh()->SetAnimInstanceClass(Aim.Class);
-	}*/
+	//static ConstructorHelpers::FClassFinder<UAnimInstance> Anim(TEXT("AnimBlueprint'/Game/BluewPrints/Anumations/ABP_FPSAnimation.ABP_FPSAnimation_C'"));
+	//if (Anim.Succeeded())
+	//{
+	//	GetMesh()->SetAnimInstanceClass(Anim.Class);
+	//}
 
 	Weapon = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Weapon"));
 	Weapon->SetupAttachment(GetMesh(), TEXT("RHandWeapon"));
@@ -65,6 +67,9 @@ AFPS_Character::AFPS_Character()
 	{
 		Weapon->SetStaticMesh(SK_M4A1.Object);
 	}
+
+	/*Weapon = CreateDefaultSubobject<UWeaponComponent>(TEXT("Weapon"));
+	Weapon->SetupAttachment(GetMesh(), TEXT("RHandWeapon"));*/
 }
 
 // Called when the game starts or when spawned

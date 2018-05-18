@@ -35,6 +35,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UStaticMeshComponent* Weapon;
 
+	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UWeaponComponent* Weapon;*/
+
 	UFUNCTION()
 	void MoveRight(float Value);
 
