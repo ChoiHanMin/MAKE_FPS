@@ -27,4 +27,27 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "info")
 		bool bIsCrouch;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "info")
+		float AimYaw;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "info")
+		float AimPitch;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsIronsight = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsSprint = false;	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsProne = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsProning = false;
+
+	UFUNCTION()
+		void AnimNotify_ProneStart(UAnimNotify* Notify);
+	UFUNCTION()
+		void AnimNotify_ProneEnd(UAnimNotify* Notify);
 };

@@ -3,6 +3,7 @@
 #include "FPS_GameMode.h"
 #include "FPS_Controller.h"
 #include "Character/FPS_Character.h"
+#include "FPS_HUD.h"
 #include "ConstructorHelpers.h"
 
 
@@ -21,7 +22,6 @@ AFPS_GameMode::AFPS_GameMode()
 		//DefaultPawnClass = AFPS_Character::StaticClass();
 		DefaultPawnClass = Pawn_Class.Class;
 	}
-
-
+	HUDClass = AFPS_HUD::StaticClass();
 	
 }

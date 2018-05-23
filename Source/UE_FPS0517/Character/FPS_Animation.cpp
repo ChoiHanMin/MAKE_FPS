@@ -17,6 +17,30 @@ void UFPS_Animation::NativeUpdateAnimation(float DeltaSeconds)
 		Direction = CalculateDirection(Pawn->GetCharacterMovement()->Velocity, Pawn->GetActorRotation());
 
 		bIsCrouch = Pawn->bIsCrouched;
+
+		AimYaw = Pawn->GetAimOffset().Yaw;
+		AimPitch = Pawn->GetAimOffset().Pitch;
+		bIsIronsight = Pawn->bIsIronsight;
+		bIsSprint = Pawn->bIsSprint;
+		bIsProning = Pawn->bIsProne;
 	}
 
+}
+
+void UFPS_Animation::AnimNotify_ProneStart(UAnimNotify* Notify)
+{
+	AFPS_Character* Pawn = Cast<AFPS_Character>(TryGetPawnOwner());
+	if (Pawn && Pawn->IsValidLowLevel())
+	{
+		Pawn->bIsProning = true;
+	}
+}
+
+void UFPS_Animation::AnimNotify_ProneEnd(UAnimNotify* Notify)
+{
+	AFPS_Character* Pawn = Cast<AFPS_Character>(TryGetPawnOwner());
+	if (Pawn && Pawn->IsValidLowLevel())
+	{
+		Pawn->bIsProning = false;
+	}
 }

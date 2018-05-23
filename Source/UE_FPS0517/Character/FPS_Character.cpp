@@ -42,7 +42,7 @@ AFPS_Character::AFPS_Character()
 	GetMesh()->SetRelativeRotation(FRotator(0, -90.0f, 0));
 
 	bUseControllerRotationPitch = false;
-	
+
 	// AnimationSetting.
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 
@@ -73,6 +73,8 @@ AFPS_Character::AFPS_Character()
 	}
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+
+	GetCharacterMovement()->MaxWalkSpeedCrouched = WalkSpeed;
 }
 
 // Called when the game starts or when spawned
@@ -80,6 +82,7 @@ void AFPS_Character::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GetCharacterMovement()->MaxWalkSpeed = JogSpeed;
 }
 
 // Called every frame
@@ -87,6 +90,11 @@ void AFPS_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	//UE_LOG(LogClass, Warning, TEXT("%f"), SpringArm->GetComponentLocation().Z);
+
+	if (bIsSprint&&GetCharacterMovement()->Velocity.SizeSquared() == 0)
+	{
+		bIsSprint = false;
+	}
 }
 
 // Called to bind functionality to input
@@ -100,11 +108,17 @@ void AFPS_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &AFPS_Character::LookUp);
 
 	PlayerInputComponent->BindAction(TEXT("Crouch"), IE_Pressed, this, &AFPS_Character::TryCrouch);
+	PlayerInputComponent->BindAction(TEXT("ironsight"), IE_Pressed, this, &AFPS_Character::Tryironsight);
+	PlayerInputComponent->BindAction(TEXT("Sprint"), IE_Pressed, this, &AFPS_Character::Sprint);
+	PlayerInputComponent->BindAction(TEXT("Sprint"), IE_Released, this, &AFPS_Character::UnSprint);
+	PlayerInputComponent->BindAction(TEXT("LookAround"), IE_Pressed, this, &AFPS_Character::LookAround);
+	PlayerInputComponent->BindAction(TEXT("LookAround"), IE_Released, this, &AFPS_Character::UndoLookAround);
+	PlayerInputComponent->BindAction(TEXT("Prone"), IE_Pressed, this, &AFPS_Character::DoProne);
 }
 
 void AFPS_Character::MoveRight(float Value)
 {
-	if (Value != 0.0f)
+	if (Value != 0.0f && !bIsSprint)
 	{
 		AddMovementInput(GetActorRightVector(), Value);
 	}
@@ -112,7 +126,7 @@ void AFPS_Character::MoveRight(float Value)
 
 void AFPS_Character::MoveForward(float Value)
 {
-	if (Value != 0.0f)
+	if (Value != 0.0f && !bIsProning)
 	{
 		AddMovementInput(GetActorForwardVector(), Value);
 	}
@@ -134,7 +148,7 @@ void AFPS_Character::LookUp(float Value)
 
 void AFPS_Character::TryCrouch()
 {
-	if (CanCrouch())
+	if (CanCrouch() && !bIsSprint)
 	{
 		Crouch();
 	}
@@ -142,6 +156,81 @@ void AFPS_Character::TryCrouch()
 	{
 		UnCrouch();
 	}
+}
+
+void AFPS_Character::Tryironsight()
+{
+	//bIsIronsight = bIsIronsight ? false : true;
+	if (!bIsIronsight && !bIsSprint)
+	{
+		bIsIronsight = true;
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	}
+	else if (bIsIronsight && !bIsSprint)
+	{
+		bIsIronsight = false;
+		GetCharacterMovement()->MaxWalkSpeed = JogSpeed;
+	}
+}
+
+void AFPS_Character::Sprint()
+{
+	if (!bIsCrouched && !bIsIronsight && GetCharacterMovement()->Velocity.Size() > 0 && !bIsProne)
+	{
+		bIsSprint = true;
+		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+	}
+}
+
+void AFPS_Character::UnSprint()
+{
+	if (bIsSprint)
+	{
+		bIsSprint = false;
+		GetCharacterMovement()->MaxWalkSpeed = JogSpeed;
+	}
+}
+
+void AFPS_Character::DoProne()
+{
+	if (!bIsProne && !bIsSprint)
+	{
+		bIsProne = true;
+		GetCharacterMovement()->MaxWalkSpeed = ProneSpeed;
+	}
+	else if (bIsProne && !bIsSprint)
+	{
+		bIsProne = false;
+		GetCharacterMovement()->MaxWalkSpeed = JogSpeed;
+		UnCrouch();
+	}
+}
+
+void AFPS_Character::LookAround()
+{
+	if (!bIsIronsight)
+	{
+		bIsLook = true;
+		bUseControllerRotationYaw = false;
+	}
+}
+
+void AFPS_Character::UndoLookAround()
+{
+	if (bIsLook)
+	{
+		bIsLook = false;
+		bUseControllerRotationYaw = true;
+	}
+}
+
+FRotator AFPS_Character::GetAimOffset() const
+{
+	const FVector AimDirWS = GetBaseAimRotation().Vector();
+	const FVector AimDirLS = ActorToWorld().InverseTransformVectorNoScale(AimDirWS);
+	const FRotator AimRotLS = AimDirLS.Rotation();
+
+	return AimRotLS;
 }
 
 

@@ -52,5 +52,53 @@ public:
 
 	UFUNCTION()
 	void TryCrouch();
+
+	UFUNCTION()
+	void Tryironsight();
+
+	UFUNCTION()
+	void Sprint();
+
+	UFUNCTION()
+	void UnSprint();
+
+	UFUNCTION()
+	void DoProne();
+
+	UFUNCTION()
+	void LookAround();
+
+	UFUNCTION()
+	void UndoLookAround();
+	
+	FRotator GetAimOffset() const;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsIronsight = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsSprint = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsLook = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsProne = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsProning = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+	float WalkSpeed = 180.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		float JogSpeed = 360.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		float SprintSpeed = 700.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		float ProneSpeed = 50.0f;
+
 	
 };
