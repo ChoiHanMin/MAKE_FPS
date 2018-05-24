@@ -11,6 +11,13 @@
 #include "Animation/AnimInstance.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h" // 플레이어 컨트롤 
+#include "Kismet/KismetSystemLibrary.h"
+#include "Particles/ParticleSystem.h"
+#include "Engine/StaticMesh.h"
+#include "Sound/SoundBase.h"
+#include "Camera/CameraShake.h"
+#include "FPS_BulletDamageType.h"
 
 #include "Character/WeaponComponent.h"
 
@@ -47,7 +54,7 @@ AFPS_Character::AFPS_Character()
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 
 	// BeginPlay 가능.
-	FStringClassReference Anim_Male_Ref(TEXT("AnimBlueprint'/Game/BluePrints/Anumations/ABP_FPSAnimation.ABP_FPSAnimation_C'"));
+	FStringClassReference Anim_Male_Ref(TEXT("AnimBlueprint'/Game/BluePrints/Animations/ABP_FPSAnimation.ABP_FPSAnimation_C'"));
 	if (UClass* Anim_Male_Class = Anim_Male_Ref.TryLoadClass<UAnimInstance>())
 	{
 		GetMesh()->SetAnimInstanceClass(Anim_Male_Class);
@@ -75,6 +82,29 @@ AFPS_Character::AFPS_Character()
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	GetCharacterMovement()->MaxWalkSpeedCrouched = WalkSpeed;
+
+
+	NormalSpringArmPosition = SpringArm->GetRelativeTransform().GetLocation();
+	CrouchSpringArmPosition = FVector(NormalSpringArmPosition.X, NormalSpringArmPosition.Y, NormalSpringArmPosition.Z - 40);
+	ProneSpringArmPosition = FVector(130, NormalSpringArmPosition.Y, NormalSpringArmPosition.Z - 100);
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> P_Explosion(TEXT("ParticleSystem'/Game/Effects/P_AssaultRifle_MF.P_AssaultRifle_MF'"));
+	if (P_Explosion.Succeeded())
+	{
+		Explosion = P_Explosion.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> P_HitExplosion(TEXT("ParticleSystem'/Game/Effects/P_AssaultRifle_IH.P_AssaultRifle_IH'"));
+	if (P_HitExplosion.Succeeded())
+	{
+		HitExplosion = P_HitExplosion.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> S_Explosion(TEXT("SoundCue'/Game/Sound/Weapons/SMG_Thompson/Cue_Thompson_Shot.Cue_Thompson_Shot'"));
+	if (S_Explosion.Succeeded())
+	{
+		ExplosionSound = S_Explosion.Object;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -109,11 +139,16 @@ void AFPS_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	PlayerInputComponent->BindAction(TEXT("Crouch"), IE_Pressed, this, &AFPS_Character::TryCrouch);
 	PlayerInputComponent->BindAction(TEXT("ironsight"), IE_Pressed, this, &AFPS_Character::Tryironsight);
+	PlayerInputComponent->BindAction(TEXT("Prone"), IE_Pressed, this, &AFPS_Character::DoProne);
+
 	PlayerInputComponent->BindAction(TEXT("Sprint"), IE_Pressed, this, &AFPS_Character::Sprint);
 	PlayerInputComponent->BindAction(TEXT("Sprint"), IE_Released, this, &AFPS_Character::UnSprint);
+
 	PlayerInputComponent->BindAction(TEXT("LookAround"), IE_Pressed, this, &AFPS_Character::LookAround);
 	PlayerInputComponent->BindAction(TEXT("LookAround"), IE_Released, this, &AFPS_Character::UndoLookAround);
-	PlayerInputComponent->BindAction(TEXT("Prone"), IE_Pressed, this, &AFPS_Character::DoProne);
+
+	PlayerInputComponent->BindAction(TEXT("Fire"), IE_Pressed, this, &AFPS_Character::StartFire);
+	PlayerInputComponent->BindAction(TEXT("Fire"), IE_Released, this, &AFPS_Character::StopFire);
 }
 
 void AFPS_Character::MoveRight(float Value)
@@ -160,6 +195,10 @@ void AFPS_Character::TryCrouch()
 
 void AFPS_Character::Tryironsight()
 {
+	if (bIsSprint)
+	{
+		return;
+	}
 	//bIsIronsight = bIsIronsight ? false : true;
 	if (!bIsIronsight && !bIsSprint)
 	{
@@ -175,7 +214,7 @@ void AFPS_Character::Tryironsight()
 
 void AFPS_Character::Sprint()
 {
-	if (!bIsCrouched && !bIsIronsight && GetCharacterMovement()->Velocity.Size() > 0 && !bIsProne)
+	if (!bIsCrouched && !bIsIronsight && GetCharacterMovement()->Velocity.Size() > 0 && !bIsProne && !bIsFire)
 	{
 		bIsSprint = true;
 		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
@@ -215,6 +254,24 @@ void AFPS_Character::LookAround()
 	}
 }
 
+void AFPS_Character::StartFire()
+{
+	if (!bIsSprint && !bIsProning)
+	{
+		bIsFire = true;
+		OnShot();
+	}
+}
+
+void AFPS_Character::StopFire()
+{
+	if (bIsFire)
+	{
+		bIsFire = false;
+		GetWorldTimerManager().ClearTimer(TimerHandle);
+	}
+}
+
 void AFPS_Character::UndoLookAround()
 {
 	if (bIsLook)
@@ -234,4 +291,80 @@ FRotator AFPS_Character::GetAimOffset() const
 }
 
 
+
+void AFPS_Character::OnShot()
+{
+	if (!bIsFire)
+	{
+		return;
+	}
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	int SizeX;
+	int SizeY;
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetViewportSize(SizeX, SizeY);
+
+	FVector WorldLocation;
+	FVector WorldDirection;
+
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->DeprojectScreenPositionToWorld(SizeX / 2, SizeY / 2, WorldLocation, WorldDirection);
+
+	FVector TraceStart = CameraLocation;
+	FVector TraceEnd = CameraLocation + (WorldDirection*80000.0f);
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	TArray<AActor*> IgnoreObjects; // 팀킬 할지 안할지 선택.
+	FHitResult OutHit;
+
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+	IgnoreObjects.Add(this);
+
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Explosion, Weapon->GetSocketTransform(TEXT("Flame")), true);
+	UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ExplosionSound, Weapon->GetSocketTransform(TEXT("Flame")).GetLocation());
+
+	// 광선 추적 시작
+	bool Result = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), TraceStart, TraceEnd, ObjectTypes, false, IgnoreObjects, EDrawDebugTrace::ForDuration, OutHit, true, FLinearColor::Blue, FLinearColor::Red, 5.0f);
+
+	if (Result)
+	{
+		TraceStart = Weapon->GetSocketTransform(TEXT("Flame")).GetLocation();
+		FVector Dir = OutHit.Location - TraceStart;
+		TraceEnd = TraceStart + (Dir *2.0f);
+
+		bool Hit = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), TraceStart, TraceEnd, ObjectTypes, false, IgnoreObjects, EDrawDebugTrace::ForDuration, OutHit, true, FLinearColor::Black, FLinearColor::Green, 5.0f);
+		if (Hit)
+		{
+
+			UGameplayStatics::ApplyDamage(OutHit.GetActor(), 30.0f, UGameplayStatics::GetPlayerController(GetWorld(), 0), this, UFPS_BulletDamageType::StaticClass());
+
+			// 맞은 이펙트
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitExplosion, OutHit.Location, FRotator::ZeroRotator);
+		}
+	}
+	UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->PlayCameraShake(UCameraShake::StaticClass());
+	
+	FRotator CurrentRotation = GetControlRotation();
+	CurrentRotation.Pitch += 1.0f;
+	CurrentRotation.Yaw += FMath::RandRange(-0.5f, 0.5f);
+
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetControlRotation(CurrentRotation);
+
+	if (bIsFire)
+	{
+		GetWorldTimerManager().SetTimer(TimerHandle, this, &AFPS_Character::OnShot, 0.2f);
+
+	}
+}
+
+float AFPS_Character::TakeDamage(float DamageAmount, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
+{
+	UE_LOG(LogClass, Warning, TEXT("읔"));
+	return 0.0f;
+}
 

@@ -69,10 +69,21 @@ public:
 	void LookAround();
 
 	UFUNCTION()
+	void StartFire();
+
+	UFUNCTION()
+	void StopFire();
+
+	UFUNCTION()
 	void UndoLookAround();
 	
 	FRotator GetAimOffset() const;
 
+	UFUNCTION()
+	void OnShot();
+
+	UFUNCTION()
+		virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 		bool bIsIronsight = false;
@@ -85,8 +96,21 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 		bool bIsProne = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 		bool bIsProning = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsFire = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		FVector ProneSpringArmPosition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		FVector NormalSpringArmPosition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		FVector CrouchSpringArmPosition;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 	float WalkSpeed = 180.0f;
@@ -98,7 +122,19 @@ public:
 		float SprintSpeed = 700.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
-		float ProneSpeed = 50.0f;
+		float ProneSpeed = 50.0f;	
 
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+		class UParticleSystem* Explosion;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+		class UParticleSystem* HitExplosion;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+		class USoundBase* ExplosionSound;
 	
+
+	FTimerHandle TimerHandle;
 };

@@ -46,6 +46,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 		bool bIsProning = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		bool bIsFire = false;
+
 	UFUNCTION()
 		void AnimNotify_ProneStart(UAnimNotify* Notify);
 	UFUNCTION()

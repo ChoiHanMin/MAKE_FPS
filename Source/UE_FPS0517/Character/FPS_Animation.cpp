@@ -22,7 +22,9 @@ void UFPS_Animation::NativeUpdateAnimation(float DeltaSeconds)
 		AimPitch = Pawn->GetAimOffset().Pitch;
 		bIsIronsight = Pawn->bIsIronsight;
 		bIsSprint = Pawn->bIsSprint;
-		bIsProning = Pawn->bIsProne;
+		bIsProne = Pawn->bIsProne;
+		bIsProning = Pawn->bIsProning;
+		bIsFire = Pawn->bIsFire;
 	}
 
 }
