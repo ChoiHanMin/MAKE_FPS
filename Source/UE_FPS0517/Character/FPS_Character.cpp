@@ -18,6 +18,8 @@
 #include "Sound/SoundBase.h"
 #include "Camera/CameraShake.h"
 #include "FPS_BulletDamageType.h"
+#include "Components/CapsuleComponent.h"
+#include "Animation/AnimMontage.h"
 
 #include "Character/WeaponComponent.h"
 
@@ -105,6 +107,13 @@ AFPS_Character::AFPS_Character()
 	{
 		ExplosionSound = S_Explosion.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> Anim_Dead(TEXT("AnimMontage'/Game/Male_Grunt/Animations/Death_2_Montage.Death_2_Montage'"));
+	if (Anim_Dead.Succeeded())
+	{
+		DeadAnimation = Anim_Dead.Object;
+	}
+
 }
 
 // Called when the game starts or when spawned
@@ -113,6 +122,7 @@ void AFPS_Character::BeginPlay()
 	Super::BeginPlay();
 
 	GetCharacterMovement()->MaxWalkSpeed = JogSpeed;
+	CurrentHP = FullHP;
 }
 
 // Called every frame
@@ -183,8 +193,18 @@ void AFPS_Character::LookUp(float Value)
 
 void AFPS_Character::TryCrouch()
 {
-	if (CanCrouch() && !bIsSprint)
+	if (bIsProning)
 	{
+		return;
+	}
+
+	if (CanCrouch() && !bIsSprint && !bIsProne)
+	{
+		Crouch();
+	}
+	else if (bIsProne)
+	{
+		bIsProne = false;
 		Crouch();
 	}
 	else
@@ -235,6 +255,7 @@ void AFPS_Character::DoProne()
 	if (!bIsProne && !bIsSprint)
 	{
 		bIsProne = true;
+		UnCrouch();
 		GetCharacterMovement()->MaxWalkSpeed = ProneSpeed;
 	}
 	else if (bIsProne && !bIsSprint)
@@ -322,14 +343,14 @@ void AFPS_Character::OnShot()
 
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_PhysicsBody));
 	IgnoreObjects.Add(this);
 
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Explosion, Weapon->GetSocketTransform(TEXT("Flame")), true);
 	UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ExplosionSound, Weapon->GetSocketTransform(TEXT("Flame")).GetLocation());
 
 	// 광선 추적 시작
-	bool Result = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), TraceStart, TraceEnd, ObjectTypes, false, IgnoreObjects, EDrawDebugTrace::ForDuration, OutHit, true, FLinearColor::Blue, FLinearColor::Red, 5.0f);
+	bool Result = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), TraceStart, TraceEnd, ObjectTypes, false, IgnoreObjects, EDrawDebugTrace::None, OutHit, true, FLinearColor::Blue, FLinearColor::Red, 5.0f);
 
 	if (Result)
 	{
@@ -337,18 +358,25 @@ void AFPS_Character::OnShot()
 		FVector Dir = OutHit.Location - TraceStart;
 		TraceEnd = TraceStart + (Dir *2.0f);
 
-		bool Hit = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), TraceStart, TraceEnd, ObjectTypes, false, IgnoreObjects, EDrawDebugTrace::ForDuration, OutHit, true, FLinearColor::Black, FLinearColor::Green, 5.0f);
+		bool Hit = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), TraceStart, TraceEnd, ObjectTypes, false, IgnoreObjects, EDrawDebugTrace::None, OutHit, true, FLinearColor::Black, FLinearColor::Green, 5.0f);
 		if (Hit)
 		{
 
-			UGameplayStatics::ApplyDamage(OutHit.GetActor(), 30.0f, UGameplayStatics::GetPlayerController(GetWorld(), 0), this, UFPS_BulletDamageType::StaticClass());
+			// 기본 데미지
+			//UGameplayStatics::ApplyDamage(OutHit.GetActor(), 30.0f, UGameplayStatics::GetPlayerController(GetWorld(), 0), this, UFPS_BulletDamageType::StaticClass());
+
+			// 반경데미지
+			//UGameplayStatics::ApplyRadialDamage(GetWorld(), 30.f, OutHit.ImpactPoint, 300.0f, UFPS_BulletDamageType::StaticClass(), IgnoreObjects, this, UGameplayStatics::GetPlayerController(GetWorld(), 0), true);
+
+			// 포인트 데미지
+			UGameplayStatics::ApplyPointDamage(OutHit.GetActor(), 30.0f, TraceEnd - TraceStart, OutHit, UGameplayStatics::GetPlayerController(GetWorld(), 0), this, UFPS_BulletDamageType::StaticClass());
 
 			// 맞은 이펙트
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitExplosion, OutHit.Location, FRotator::ZeroRotator);
 		}
 	}
 	UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->PlayCameraShake(UCameraShake::StaticClass());
-	
+
 	FRotator CurrentRotation = GetControlRotation();
 	CurrentRotation.Pitch += 1.0f;
 	CurrentRotation.Yaw += FMath::RandRange(-0.5f, 0.5f);
@@ -364,7 +392,46 @@ void AFPS_Character::OnShot()
 
 float AFPS_Character::TakeDamage(float DamageAmount, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
 {
-	UE_LOG(LogClass, Warning, TEXT("읔"));
+	if (CurrentHP <= 0)
+	{
+		return 0;
+	}
+
+
+	if (DamageEvent.IsOfType(FRadialDamageEvent::ClassID))
+	{
+		FRadialDamageEvent* RadialDamageEvent = (FRadialDamageEvent*)(&DamageEvent);
+	}
+	else if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	{
+		FPointDamageEvent* PointDamageEvent = (FPointDamageEvent*)(&DamageEvent);
+
+		if (PointDamageEvent->HitInfo.BoneName.Compare(FName(TEXT("head"))) == 0)
+		{
+			UE_LOG(LogClass, Warning, TEXT("머리 읔 %s"), *PointDamageEvent->HitInfo.BoneName.ToString());
+			CurrentHP = 0;
+		}
+		else
+		{
+			UE_LOG(LogClass, Warning, TEXT("읔 %s"), *PointDamageEvent->HitInfo.BoneName.ToString());
+			CurrentHP -= DamageAmount;
+		}
+
+		if (CurrentHP <= 0)
+		{
+			CurrentHP = 0;
+			//GetMesh()->SetSimulatePhysics(true);
+			PlayAnimMontage(DeadAnimation);
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			//DisableInput()
+
+			
+		}
+	}
+	else if (DamageEvent.IsOfType(FDamageEvent::ClassID))
+	{
+
+	}
 	return 0.0f;
 }
 

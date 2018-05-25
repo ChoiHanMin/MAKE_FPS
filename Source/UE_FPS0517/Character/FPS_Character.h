@@ -122,7 +122,16 @@ public:
 		float SprintSpeed = 700.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
-		float ProneSpeed = 50.0f;	
+		float ProneSpeed = 50.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		float CurrentHP;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		float FullHP = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		UAnimMontage* DeadAnimation;
 
 
 
