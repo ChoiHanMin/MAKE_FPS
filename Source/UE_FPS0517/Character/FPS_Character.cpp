@@ -335,8 +335,9 @@ void AFPS_Character::OnShot()
 	UGameplayStatics::GetPlayerController(GetWorld(), 0)->DeprojectScreenPositionToWorld(SizeX / 2, SizeY / 2, WorldLocation, WorldDirection);
 
 	FVector TraceStart = CameraLocation;
+	//	Zombie->GetActorLocation()
 	FVector TraceEnd = CameraLocation + (WorldDirection*80000.0f);
-
+	//	Zombie->GetActorLocation() + (WorldDirection*8000.0f);
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	TArray<AActor*> IgnoreObjects; // 팀킬 할지 안할지 선택.
 	FHitResult OutHit;

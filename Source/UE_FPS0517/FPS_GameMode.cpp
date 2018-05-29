@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "FPS_GameMode.h"
-#include "FPS_Controller.h"
+#include "Character/FPS_Controller.h"
 #include "Character/FPS_Character.h"
 #include "FPS_HUD.h"
 #include "ConstructorHelpers.h"
