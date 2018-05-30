@@ -6,12 +6,13 @@
 #include "Animation/AnimInstance.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "Kismet/GameplayStatics.h"
 #include "Perception/PawnSensingComponent.h"
 #include "Character/FPS_Character.h"
 #include "BehaviorTree/BlackboardComponent.h"
-
+#include "Zombie/UI/FPS_ZombieHPBarWidgetBase.h"
 
 #include "Zombie/AI/FPS_ZombieAIControll.h"
 #include "Zombie/AI/FPS_ZombieTargetPoint.h"
@@ -53,7 +54,16 @@ AFPS_Zombie::AFPS_Zombie()
 
 	PawnSensing = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensing"));
 	PawnSensing->SightRadius = 300.0f;
-	PawnSensing->SetPeripheralVisionAngle(30.0f);
+	PawnSensing->SetPeripheralVisionAngle(60.0f);
+
+	HPBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBar"));
+	HPBar->SetupAttachment(RootComponent);
+
+	static ConstructorHelpers::FClassFinder<UFPS_ZombieHPBarWidgetBase> Widget_Class(TEXT("WidgetBlueprint'/Game/Zombie/UI/FPS_ZombieHPBarWidget.FPS_ZombieHPBarWidget'_C"));
+	if (Widget_Class.Succeeded())
+	{
+		HPBar->SetWidgetClass(Widget_Class.Class);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -80,7 +90,7 @@ void AFPS_Zombie::BeginPlay()
 void AFPS_Zombie::OnSeePawn(APawn* Pawn)
 {
 	AFPS_Character* Player = Cast<AFPS_Character>(Pawn);
-	if (Player && Player->CurrentHP > 0)
+	if (Player && Player->CurrentHP > 0 && CurrentState == EZombieState::NORMAL)
 	{
 		AFPS_ZombieAIControll* AIC = Cast<AFPS_ZombieAIControll>(GetController());
 		if (AIC)
@@ -96,10 +106,29 @@ void AFPS_Zombie::OnSeePawn(APawn* Pawn)
 
 void AFPS_Zombie::OnHearNoise(APawn* Pawn, const FVector& Location, float Volme)
 {
-	UE_LOG(LogClass,Warning,TEXT("어쩌"));
-	
-	// 공격할 때 플레이어 방향쪽으로 좀비를 틀어준다.
-	Pawn->SetActorRotation(Location.Rotation());
+	//AFPS_Zombie* Zombie = Cast<AFPS_Zombie>(execSelf);
+
+	//FVector Dir = Location - Pawn->GetActorLocation();
+	//// 공격할 때 플레이어 방향쪽으로 좀비를 틀어준다.
+	//Zombie->SetActorRotation(Dir.Rotation());
+
+	AFPS_Character* Player = Cast<AFPS_Character>(Pawn);
+	if (Player && Player->CurrentHP > 0 && CurrentState == EZombieState::NORMAL)
+	{
+		AFPS_ZombieAIControll* AIC = Cast<AFPS_ZombieAIControll>(GetController());
+		if (AIC)
+		{
+			CurrentState = EZombieState::CHASE;
+			CurrentAnimState = EZombieAnimState::RUN;
+
+			FVector Dir = Player->GetActorLocation() - Pawn->GetActorLocation();
+			// 공격할 때 플레이어 방향쪽으로 좀비를 틀어준다.
+			SetActorRotation(Dir.Rotation());
+
+			AIC->BBComponent->SetValueAsObject(FName(TEXT("Target")), Player);
+			AIC->BBComponent->SetValueAsEnum(FName(TEXT("CurrentState")), (uint8)CurrentState);
+		}
+	}
 }
 
 void AFPS_Zombie::OnAttack()
@@ -116,6 +145,22 @@ void AFPS_Zombie::OnAttack()
 void AFPS_Zombie::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPlayerViewPoint(CameraLocation, CameraRotation);
+		
+	FVector Dir = CameraLocation - HPBar->GetComponentLocation();
+
+	HPBar->SetWorldRotation(Dir.Rotation());
+
+	UFPS_ZombieHPBarWidgetBase* ZombieHP = Cast<UFPS_ZombieHPBarWidgetBase>(HPBar->GetUserWidgetObject());
+	if (ZombieHP)
+	{
+		ZombieHP->Percent = CurrentHP / MaxHP;
+	}
+
 
 }
 
@@ -174,8 +219,9 @@ float AFPS_Zombie::TakeDamage(float DamageAmount, FDamageEvent const & DamageEve
 
 			//GetMesh()->SetSimulatePhysics(true);
 			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+			HPBar->SetVisibility(false);
 			UE_LOG(LogClass, Warning, TEXT("죽음"));
-			//DisableInput()
 		}
 	}
 	else if (DamageEvent.IsOfType(FDamageEvent::ClassID))

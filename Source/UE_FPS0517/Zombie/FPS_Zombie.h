@@ -80,8 +80,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 		class UBehaviorTree* Behaviortree;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 		class UPawnSensingComponent* PawnSensing;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
+		class UWidgetComponent* HPBar;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 		TArray<class AFPS_ZombieTargetPoint*>  PatrolPoints;
