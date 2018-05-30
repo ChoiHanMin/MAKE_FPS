@@ -23,7 +23,7 @@ void AFPS_ZombieAIControll::Possess(APawn * InPawn)
 	{
 		BBComponent->InitializeBlackboard(*(Zombie->Behaviortree->BlackboardAsset));
 		BTComponent->StartTree(*(Zombie->Behaviortree));
-		UE_LOG(LogClass, Warning, TEXT("black"));
+		//UE_LOG(LogClass, Warning, TEXT("black"));
 	}
 
 }

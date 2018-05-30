@@ -33,10 +33,13 @@ public:
 		class UCameraComponent* Camera;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	class UStaticMeshComponent* Weapon;
+		class UStaticMeshComponent* Weapon;
 
 	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UWeaponComponent* Weapon;*/
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		class UPawnNoiseEmitterComponent* Noise;
 
 	UFUNCTION()
 	void MoveRight(float Value);

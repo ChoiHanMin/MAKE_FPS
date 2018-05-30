@@ -8,6 +8,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/ActorComponent.h"
+#include "Components/PawnNoiseEmitterComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -20,6 +21,8 @@
 #include "FPS_BulletDamageType.h"
 #include "Components/CapsuleComponent.h"
 #include "Animation/AnimMontage.h"
+#include "Character/FPS_Controller.h"
+
 
 #include "Character/WeaponComponent.h"
 
@@ -114,6 +117,9 @@ AFPS_Character::AFPS_Character()
 		DeadAnimation = Anim_Dead.Object;
 	}
 
+	Tags.Add(FName(TEXT("Player")));
+
+	Noise = CreateDefaultSubobject<UPawnNoiseEmitterComponent>(TEXT("Noise"));
 }
 
 // Called when the game starts or when spawned
@@ -374,6 +380,9 @@ void AFPS_Character::OnShot()
 
 			// 맞은 이펙트
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitExplosion, OutHit.Location, FRotator::ZeroRotator);
+
+			Noise->MakeNoise(this, 1.0f, OutHit.Location);
+			Noise->NoiseLifetime = 0.2f;
 		}
 	}
 	UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->PlayCameraShake(UCameraShake::StaticClass());
@@ -416,23 +425,24 @@ float AFPS_Character::TakeDamage(float DamageAmount, FDamageEvent const & Damage
 		{
 			UE_LOG(LogClass, Warning, TEXT("읔 %s"), *PointDamageEvent->HitInfo.BoneName.ToString());
 			CurrentHP -= DamageAmount;
-		}
-
-		if (CurrentHP <= 0)
-		{
-			CurrentHP = 0;
-			//GetMesh()->SetSimulatePhysics(true);
-			PlayAnimMontage(DeadAnimation);
-			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			//DisableInput()
-
-			
-		}
+		}		
 	}
 	else if (DamageEvent.IsOfType(FDamageEvent::ClassID))
 	{
+		CurrentHP -= DamageAmount;
+	}
+
+	if (CurrentHP <= 0)
+	{
+		CurrentHP = 0;
+		//GetMesh()->SetSimulatePhysics(true);
+		PlayAnimMontage(DeadAnimation);
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		DisableInput(Cast<AFPS_Controller>(GetController()));
+
 
 	}
-	return 0.0f;
+
+	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 }
 

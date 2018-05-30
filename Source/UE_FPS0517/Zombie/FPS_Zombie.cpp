@@ -19,7 +19,7 @@
 // Sets default values
 AFPS_Zombie::AFPS_Zombie()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SK_Zombie(TEXT("SkeletalMesh'/Game/Zombie/Mesh/Zombie.Zombie'"));
@@ -54,7 +54,6 @@ AFPS_Zombie::AFPS_Zombie()
 	PawnSensing = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensing"));
 	PawnSensing->SightRadius = 300.0f;
 	PawnSensing->SetPeripheralVisionAngle(30.0f);
-
 }
 
 // Called when the game starts or when spawned
@@ -81,7 +80,7 @@ void AFPS_Zombie::BeginPlay()
 void AFPS_Zombie::OnSeePawn(APawn* Pawn)
 {
 	AFPS_Character* Player = Cast<AFPS_Character>(Pawn);
-	if (Player)
+	if (Player && Player->CurrentHP > 0)
 	{
 		AFPS_ZombieAIControll* AIC = Cast<AFPS_ZombieAIControll>(GetController());
 		if (AIC)
@@ -89,15 +88,28 @@ void AFPS_Zombie::OnSeePawn(APawn* Pawn)
 			CurrentState = EZombieState::CHASE;
 			CurrentAnimState = EZombieAnimState::RUN;
 
-			AIC->BBComponent->SetValueAsObject(FName(TEXT("Target")),Player);
-			AIC->BBComponent->SetValueAsEnum(FName(TEXT("CurrentState")), (uint8)CurrentState);		
+			AIC->BBComponent->SetValueAsObject(FName(TEXT("Target")), Player);
+			AIC->BBComponent->SetValueAsEnum(FName(TEXT("CurrentState")), (uint8)CurrentState);
 		}
 	}
 }
 
 void AFPS_Zombie::OnHearNoise(APawn* Pawn, const FVector& Location, float Volme)
 {
+	UE_LOG(LogClass,Warning,TEXT("어쩌"));
+	
+	// 공격할 때 플레이어 방향쪽으로 좀비를 틀어준다.
+	Pawn->SetActorRotation(Location.Rotation());
+}
 
+void AFPS_Zombie::OnAttack()
+{
+	AFPS_ZombieAIControll* AIC = Cast<AFPS_ZombieAIControll>(GetController());
+	if (AIC)
+	{
+		AActor* DamageActor = Cast<AActor>(AIC->BBComponent->GetValueAsObject(TEXT("Target")));
+		UGameplayStatics::ApplyDamage(DamageActor, Attack, AIC, this, nullptr);
+	}
 }
 
 // Called every frame
@@ -135,7 +147,7 @@ float AFPS_Zombie::TakeDamage(float DamageAmount, FDamageEvent const & DamageEve
 	{
 		FPointDamageEvent* PointDamageEvent = (FPointDamageEvent*)(&DamageEvent);
 
-	
+
 
 		if (PointDamageEvent->HitInfo.BoneName.Compare(FName(TEXT("head"))) == 0)
 		{
@@ -153,7 +165,7 @@ float AFPS_Zombie::TakeDamage(float DamageAmount, FDamageEvent const & DamageEve
 			CurrentHP = 0;
 			CurrentState = EZombieState::DEAD;
 			CurrentAnimState = EZombieAnimState::DEATH;
-			
+
 			AFPS_ZombieAIControll* AIC = Cast<AFPS_ZombieAIControll>(GetController());
 			if (AIC)
 			{

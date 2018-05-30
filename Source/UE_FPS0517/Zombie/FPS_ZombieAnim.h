@@ -23,5 +23,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 		EZombieAnimState CurrentAnimState;
+
+	UFUNCTION()
+	void AnimNotify_StartAttack(UAnimNotify* Notify);
 	
 };

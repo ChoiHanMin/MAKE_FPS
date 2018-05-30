@@ -30,6 +30,6 @@ void UAnimNotifyState_ZombieMove::NotifyEnd(USkeletalMeshComponent * MeshComp, U
 	AFPS_Zombie* Pawn = Cast<AFPS_Zombie>(MeshComp->GetOwner());
 	if (Pawn)
 	{
-		Pawn->GetCharacterMovement()->MaxWalkSpeed = 20.0f;
+		Pawn->GetCharacterMovement()->MaxWalkSpeed = 2.0f;
 	}
 }

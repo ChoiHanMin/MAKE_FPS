@@ -64,6 +64,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 		float AttackRange = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+		float Attack = 30.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 		bool Hit = false;
@@ -90,4 +93,6 @@ public:
 
 	UFUNCTION()
 	void OnHearNoise(APawn* InPawn, const FVector & Location, float Volme);
+
+	void OnAttack();
 };
