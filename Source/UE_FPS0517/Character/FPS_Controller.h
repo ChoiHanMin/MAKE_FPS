@@ -15,7 +15,11 @@ class UE_FPS0517_API AFPS_Controller : public APlayerController
 	GENERATED_BODY()
 public:
 	AFPS_Controller();
-	
+
+	virtual void BeginPlay() override;
+
+	UPROPERTY(VisibleAnyWhere, BlueprintReadWrite)
+	class UItemTooltipWidget* ItemTooltip;
 	
 	
 };

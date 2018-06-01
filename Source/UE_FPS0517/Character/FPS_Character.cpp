@@ -22,7 +22,10 @@
 #include "Components/CapsuleComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Character/FPS_Controller.h"
-
+#include "MasterItems.h"
+#include "ItemTooltipWidget.h"
+#include "Components/TextBlock.h"
+#include "ItemdataTableComponent.h"
 
 #include "Character/WeaponComponent.h"
 
@@ -103,6 +106,12 @@ AFPS_Character::AFPS_Character()
 	if (P_HitExplosion.Succeeded())
 	{
 		HitExplosion = P_HitExplosion.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> P_HitBody(TEXT("ParticleSystem'/Game/Effects/P_body_bullet_impact.P_body_bullet_impact'"));
+	if (P_HitBody.Succeeded())
+	{
+		HitBody = P_HitBody.Object;
 	}
 
 	static ConstructorHelpers::FObjectFinder<USoundBase> S_Explosion(TEXT("SoundCue'/Game/Sound/Weapons/SMG_Thompson/Cue_Thompson_Shot.Cue_Thompson_Shot'"));
@@ -341,9 +350,9 @@ void AFPS_Character::OnShot()
 	UGameplayStatics::GetPlayerController(GetWorld(), 0)->DeprojectScreenPositionToWorld(SizeX / 2, SizeY / 2, WorldLocation, WorldDirection);
 
 	FVector TraceStart = CameraLocation;
-	//	Zombie->GetActorLocation()
+
 	FVector TraceEnd = CameraLocation + (WorldDirection*80000.0f);
-	//	Zombie->GetActorLocation() + (WorldDirection*8000.0f);
+	
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	TArray<AActor*> IgnoreObjects; // 팀킬 할지 안할지 선택.
 	FHitResult OutHit;
@@ -379,12 +388,21 @@ void AFPS_Character::OnShot()
 			UGameplayStatics::ApplyPointDamage(OutHit.GetActor(), 30.0f, TraceEnd - TraceStart, OutHit, UGameplayStatics::GetPlayerController(GetWorld(), 0), this, UFPS_BulletDamageType::StaticClass());
 
 			// 맞은 이펙트
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitExplosion, OutHit.Location, FRotator::ZeroRotator);
+			if (OutHit.GetActor()->ActorHasTag(FName(TEXT("Player"))) || OutHit.GetActor()->ActorHasTag(FName(TEXT("Zombie"))))
+			{
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitBody, OutHit.Location, FRotator::ZeroRotator);
+			}
+			else
+			{
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitExplosion, OutHit.Location, FRotator::ZeroRotator);
+			}
 
 			Noise->MakeNoise(this, 1.0f, OutHit.Location);
 			Noise->NoiseLifetime = 0.2f;
 		}
 	}
+
+
 	UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->PlayCameraShake(UCameraShake::StaticClass());
 
 	FRotator CurrentRotation = GetControlRotation();
@@ -425,7 +443,7 @@ float AFPS_Character::TakeDamage(float DamageAmount, FDamageEvent const & Damage
 		{
 			UE_LOG(LogClass, Warning, TEXT("읔 %s"), *PointDamageEvent->HitInfo.BoneName.ToString());
 			CurrentHP -= DamageAmount;
-		}		
+		}
 	}
 	else if (DamageEvent.IsOfType(FDamageEvent::ClassID))
 	{
@@ -445,4 +463,50 @@ float AFPS_Character::TakeDamage(float DamageAmount, FDamageEvent const & Damage
 
 	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 }
+//
+//void AFPS_Character::AddPickupItemList(class AMasterITems* Item)
+//{
+//	if (Item && !Item->IsPendingKill())
+//	{
+//		CanPickupList.Add(Item);
+//	}
+//
+//	//ViewItemTooltip();
+//}
+//
+//void AFPS_Character::RemovePickupItemList(class AMasterITems* Item)
+//{
+//	if (Item)
+//	{
+//		CanPickupList.Remove(Item);
+//	}
+//
+//	//ViewItemTooltip();
+//}
 
+void AFPS_Character::ViewItemTooltip()
+{
+	AFPS_Controller* PC = Cast<AFPS_Controller>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (!PC)
+	{
+		return;
+	}
+	if (CanPickupList.Num() == 0)
+	{
+		PC->ItemTooltip->Setvisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+
+	// 제일 가까운 아이템 가져오기.
+	AMasterItems* ClosetItem = CanPickupList[0];
+	if (ClosetItem)
+	{
+		PC->ItemTooltip->ItemName->SetText(FText::FromString(ClosetItem->ItemDataTable->GetItemData(ClosetItem->ItemIndex).ItemName));
+		PC->ItemTooltip->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else
+	{
+		PC->ItemTooltip->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+}

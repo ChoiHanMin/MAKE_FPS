@@ -88,6 +88,8 @@ public:
 	UFUNCTION()
 		virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser);
 
+	void ViewItemTooltip();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 		bool bIsIronsight = false;
 
@@ -145,8 +147,19 @@ public:
 		class UParticleSystem* HitExplosion;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+		class UParticleSystem* HitBody;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 		class USoundBase* ExplosionSound;
 	
 
 	FTimerHandle TimerHandle;
+
+	TArray<class AMasterItems*> CanPickupList;
+
+	//UFUNCTION(BlueprintCallable)
+	//	void AddPickupItemList(class AMasterITems* Item);
+
+	//UFUNCTION(BlueprintCallable)
+	//	void RemovePickupItemList(class AMasterITems* Item);
 };

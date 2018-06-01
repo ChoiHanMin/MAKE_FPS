@@ -64,6 +64,8 @@ AFPS_Zombie::AFPS_Zombie()
 	{
 		HPBar->SetWidgetClass(Widget_Class.Class);
 	}
+
+	Tags.Add(FName(TEXT("Zombie")));
 }
 
 // Called when the game starts or when spawned

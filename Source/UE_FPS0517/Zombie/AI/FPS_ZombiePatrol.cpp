@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "FPS_ZombiePatrol.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
@@ -17,7 +17,7 @@ EBTNodeResult::Type UFPS_ZombiePatrol::ExecuteTask(UBehaviorTreeComponent& Owner
 	{
 		AFPS_ZombieTargetPoint* Point = Pawn->PatrolPoints[FMath::RandRange(0, Pawn->PatrolPoints.Num() - 1)];
 
-		// ºí·¢º¸µå µî·Ï.
+		// ë¸”ëž™ë³´ë“œ ë“±ë¡.
 		OwnerComp.GetBlackboardComponent()->SetValueAsObject(GetSelectedBlackboardKey(), Point);
 		return EBTNodeResult::Succeeded;
 	}

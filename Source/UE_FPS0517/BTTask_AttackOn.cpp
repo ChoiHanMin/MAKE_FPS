@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "BTTask_AttackOn.h"
 #include "Zombie/FPS_Zombie.h"
@@ -18,7 +18,7 @@ EBTNodeResult::Type UBTTask_AttackOn::ExecuteTask(UBehaviorTreeComponent & Owner
 	float Range = FVector::Distance(Zombie->GetActorLocation(), Player->GetActorLocation());
 	FVector Dir = Player->GetActorLocation() - Zombie->GetActorLocation();
 
-	// °ø°ÝÇÒ ¶§ ÇÃ·¹ÀÌ¾î ¹æÇâÂÊÀ¸·Î Á»ºñ¸¦ Æ²¾îÁØ´Ù.
+	// ê³µê²©í•  ë•Œ í”Œë ˆì´ì–´ ë°©í–¥ìª½ìœ¼ë¡œ ì¢€ë¹„ë¥¼ í‹€ì–´ì¤€ë‹¤.
 	Zombie->SetActorRotation(Dir.Rotation());
 
 	if (Range >= Zombie->AttackRange)
